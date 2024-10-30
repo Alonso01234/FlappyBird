@@ -47,6 +47,11 @@ scrn.onkeydown = function keyDown(e) {
 
 let frames = 0;
 let dx = 2;
+let lossCount=0;
+let showGif = true; 
+let gifTimeout; 
+const gif = new Image(); // Carga la imagen del GIF
+gif.src = "img/scary.gif";
 const state = {
   curr: 0,
   getReady: 0,
@@ -160,23 +165,34 @@ const bird = {
         }
 
         break;
-      case state.gameOver:
-        this.frame = 1;
-        if (this.y + r < gnd.y) {
-          this.y += this.speed;
-          this.setRotation();
-          this.speed += this.gravity * 2;
-        } else {
-          this.speed = 0;
-          this.y = gnd.y - r;
-          this.rotatation = 90;
-          if (!SFX.played) {
-            SFX.die.play();
-            SFX.played = true;
+        case state.gameOver:
+          this.frame = 1;
+          if (this.y + r < gnd.y) {
+              this.y += this.speed;
+              this.setRotation();
+              this.speed += this.gravity * 2;
+          } else {
+              this.speed = 0;
+              this.y = gnd.y - r;
+              this.rotatation = 90;
+              if (!SFX.played) {
+                  SFX.hit.play();
+                  SFX.played = true;
+                  lossCount++; // Incrementa el contador de pérdidas
+              }
+      
+              // Mostrar el GIF si el contador está entre 2 y 5
+              if (lossCount == 2) {
+                  showGif = false; // Marcar que el GIF debe mostrarse
+                  // Configura un temporizador para ocultar el GIF después de 2 segundos (2000 ms)
+                  clearTimeout(gifTimeout); // Asegúrate de limpiar el temporizador anterior
+                  gifTimeout = setTimeout(() => {
+                      showGif = true; // Ocultar el GIF
+                  }, 100000);
+              }
           }
-        }
-
-        break;
+          break;
+      
     }
     this.frame = this.frame % this.animations.length;
   },
@@ -198,7 +214,7 @@ const bird = {
     let bird = this.animations[0].sprite;
     let x = pipe.pipes[0].x;
     let y = pipe.pipes[0].y;
-    let r = bird.height / 4 + bird.width / 4;
+    let r = bird.height / 5 + bird.width / 5;
     let roof = y + parseFloat(pipe.top.sprite.height);
     let floor = roof + pipe.gap;
     let w = parseFloat(pipe.top.sprite.width);
@@ -262,6 +278,7 @@ const UI = {
         sctx.fillText(this.score.curr, scrn.width / 2 - 5, 50);
         sctx.strokeText(this.score.curr, scrn.width / 2 - 5, 50);
         break;
+
       case state.gameOver:
         sctx.lineWidth = "2";
         sctx.font = "40px Squada One";
@@ -277,14 +294,26 @@ const UI = {
           sctx.strokeText(sc, scrn.width / 2 - 80, scrn.height / 2 + 0);
           sctx.fillText(bs, scrn.width / 2 - 80, scrn.height / 2 + 30);
           sctx.strokeText(bs, scrn.width / 2 - 80, scrn.height / 2 + 30);
+
+          
+          if (this.score.curr >= 10) {
+            sctx.font = "22px Squada One";
+            sctx.fillStyle = " #79D2E6";
+            let message = "La clave es: mandarina";
+            let textWidth = sctx.measureText(message).width;
+            sctx.fillText(message, (scrn.width - textWidth) / 2, scrn.height / 2 + 70);
+            sctx.strokeText(message, (scrn.width - textWidth) / 2, scrn.height / 2 + 70);
+          }
         } catch (e) {
           sctx.fillText(sc, scrn.width / 2 - 85, scrn.height / 2 + 15);
           sctx.strokeText(sc, scrn.width / 2 - 85, scrn.height / 2 + 15);
         }
-
         break;
     }
   },
+
+
+
   update: function () {
     if (state.curr == state.Play) return;
     this.frame += frames % 10 == 0 ? 1 : 0;
@@ -324,7 +353,7 @@ function update() {
 }
 
 function draw() {
-  sctx.fillStyle = "#30c0df";
+  sctx.fillStyle = "#ff0000";
   sctx.fillRect(0, 0, scrn.width, scrn.height);
   bg.draw();
   pipe.draw();
@@ -332,6 +361,7 @@ function draw() {
   bird.draw();
   gnd.draw();
   UI.draw();
+
 }
 
 setInterval(gameLoop, 20);
